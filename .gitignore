@@ -1,0 +1,12 @@
+/build/
+/obj/
+/bin/
+/.qtcreator/
+*.pro.user*
+/.qmake.stash
+Makefile*
+build/
+build-cmake/
+.qtcreator/
+*.user
+output.avi
