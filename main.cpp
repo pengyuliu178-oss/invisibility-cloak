@@ -6,11 +6,13 @@
 #include "SmoothFps.h"
 #include "Invisible.h"
 #include "Profiler.h"
+#include "PersonSeg.h"
 using namespace std;
 using namespace cv;
 
 //---------------------------- 模式 ----------------------------
-enum class Mode { Tracking, Invisible };
+
+enum class Mode { Tracking, InvisibleHSV, InvisibleAI };
 
 int main()
 {
@@ -80,6 +82,7 @@ int main()
     //------------- 状态变量 -------------
     Track tracker;
     SmoothFps fpsCounter;
+    PersonSeg seg("models/human_segmentation_pphumanseg_2023mar.onnx");
     VideoWriter writer;
     bool recording = false;
     Mat backImg;
@@ -107,28 +110,38 @@ int main()
         // frame 保持干净,所有绘制都在 output 上
         Mat output = frame.clone();
 
-        switch (mode)
+    switch (mode)
+    {
+    case Mode::Tracking:
+    {
+        auto centers = tracker.findMidPoint(frame, lower, upper);
+        tracker.update(centers);
+        tracker.draw(output, centers);
+        break;
+    }
+    case Mode::InvisibleHSV:
+    case Mode::InvisibleAI:
+    {
+        if (backImg.empty())
         {
-        case Mode::Tracking:
-        {
-            auto centers = tracker.findMidPoint(frame, lower, upper);
-            tracker.update(centers);
-            tracker.draw(output, centers);
-            break;
-        }
-        case Mode::Invisible:
-            if (backImg.empty())
-            {
-                cv::putText(output, "Press B to capture background", Point(20, 40),
+            cv::putText(output, "Press B to capture background", Point(20, 40),
                         FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 0), 2);
-            }
-            else
-            {
-                output = makeInvisible(frame, backImg, lower, upper, prof);
-                prof.frameDone();
-            }
             break;
         }
+
+        prof.begin();
+
+        // 掩膜来源是唯一的区别
+        Mat mask = (mode == Mode::InvisibleHSV)
+                       ? colorMask(frame, lower, upper, prof)
+                       : seg.segment(frame);
+        if (mode == Mode::InvisibleAI) prof.lap("AI segment");
+
+        output = blendWithMask(frame, backImg, mask, prof);
+        prof.frameDone();
+        break;
+    }
+    }
         profMain.lap("process"); 
 
         // 公共部分:FPS、模式提示、显示、录制
@@ -138,9 +151,15 @@ int main()
         cv::putText(output, buf, Point(10, 30),
                 FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 255, 0), 2);
 
-        const char* modeName = (mode == Mode::Tracking) ? "Mode: Tracking" : "Mode: Invisible";
+        const char* modeName = "";
+        switch (mode)
+        {
+        case Mode::Tracking:     modeName = "Mode: Tracking";     break;
+        case Mode::InvisibleHSV: modeName = "Mode: Invisible HSV"; break;
+        case Mode::InvisibleAI:  modeName = "Mode: Invisible AI";  break;
+        }
         cv::putText(output, modeName, Point(10, 60),
-                FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 255), 2);
+            FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 255), 2);
 
         cv::imshow("Result", output);
         profMain.lap("imshow");
@@ -161,7 +180,11 @@ int main()
         }
         else if (key == 'i' || key == 'I')
         {
-            mode = Mode::Invisible;
+            mode = Mode::InvisibleHSV;
+        }
+        else if (key == 'a' || key == 'A')
+        {
+            mode = Mode::InvisibleAI;
         }
         else if (key == 'b' || key == 'B')
         {
@@ -212,8 +235,6 @@ int main()
         }
         profMain.frameDone();
     }
-       
-    
 
     writer.release();
     capture.release();

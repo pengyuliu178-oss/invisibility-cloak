@@ -14,8 +14,29 @@ using std::vector;
  *   prof    计时器
  * 返回:合成后的画面(8 位 BGR)
  */
-Mat makeInvisible(const Mat& frame, const Mat& backImg,
-                  const Scalar& lower, const Scalar& upper, Profiler& prof)
+
+/*----------得到掩膜----------*/
+// Invisible.cpp
+Mat blendWithMask(const Mat& frame, const Mat& backImg,
+                  const Mat& mask, Profiler& prof)
+{
+    // 羽化:高斯模糊让边缘出现灰色过渡
+    Mat softMask;
+    GaussianBlur(mask, softMask, Size(9, 9), 0);        prof.lap("GaussianBlur");
+
+    // 8 位整数混合:结果 = 背景 × α + 当前帧 × (1 − α)
+    Mat alpha3, inv, partBack, partFront, result;
+    cvtColor(softMask, alpha3, COLOR_GRAY2BGR);
+    bitwise_not(alpha3, inv);
+    multiply(backImg, alpha3, partBack,  1.0 / 255.0);
+    multiply(frame,   inv,    partFront, 1.0 / 255.0);
+    add(partBack, partFront, result);                   prof.lap("intBlend");
+    return result;
+}
+
+
+cv::Mat colorMask(const cv::Mat& frame, const cv::Scalar& lower,
+                  const cv::Scalar& upper, Profiler& prof)
 {
     prof.begin();
 
@@ -44,7 +65,10 @@ Mat makeInvisible(const Mat& frame, const Mat& backImg,
     // 高斯模糊让掩膜边缘出现 0~255 的灰色过渡,合成时边缘更自然
     Mat softMask;
     GaussianBlur(cleanMask, softMask, Size(9, 9), 0);                   prof.lap("5 GaussianBlur");
+    
+    return cleanMask;
 
+    /*-----------------------------------以下替换成blendWithMask函数实现-------------------------------
     // ================= 第五步:透明度融合(8 位整数版) =================
     // 思路:全程保持 8 位,不再转 float。
     // 公式仍是:结果 = 背景 × α + 当前帧 × (1 − α),
@@ -88,4 +112,6 @@ Mat makeInvisible(const Mat& frame, const Mat& backImg,
     finalF.convertTo(result, CV_8U);                  // 转回 8 位(自动饱和) prof.lap("9 toU8");
     return result;
     ======================================================================= */
+    
+    //-------------------------------------------------------------------------*/
 }

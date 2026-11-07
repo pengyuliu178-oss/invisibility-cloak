@@ -10,7 +10,15 @@ add_executable(${PROJECT_NAME}
     main.cpp
     Track.cpp
     Invisible.cpp
+    PersonSeg.cpp
 )
+
+add_executable(seg_test seg_test.cpp)
+target_link_libraries(seg_test PRIVATE ${OpenCV_LIBS})
+
+if(MSVC)
+    target_compile_options(seg_test PRIVATE /utf-8)
+endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${OpenCV_LIBS})

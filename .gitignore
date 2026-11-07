@@ -10,3 +10,6 @@ build-cmake/
 .qtcreator/
 *.user
 output.avi
+.vscode/
+hsv_setting.yml
+models/*.onnx
