@@ -14,4 +14,7 @@ public:
 
 private:
     cv::dnn::Net net_;
+
+    cv::Mat prevDiff_;      // 上一帧的平滑得分图
+    float smooth_ = 0.6f;   // 越大越稳,但拖影越明显
 };

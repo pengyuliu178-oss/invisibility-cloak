@@ -16,23 +16,7 @@ using std::vector;
  */
 
 /*----------得到掩膜----------*/
-// Invisible.cpp
-Mat blendWithMask(const Mat& frame, const Mat& backImg,
-                  const Mat& mask, Profiler& prof)
-{
-    // 羽化:高斯模糊让边缘出现灰色过渡
-    Mat softMask;
-    GaussianBlur(mask, softMask, Size(9, 9), 0);        prof.lap("GaussianBlur");
 
-    // 8 位整数混合:结果 = 背景 × α + 当前帧 × (1 − α)
-    Mat alpha3, inv, partBack, partFront, result;
-    cvtColor(softMask, alpha3, COLOR_GRAY2BGR);
-    bitwise_not(alpha3, inv);
-    multiply(backImg, alpha3, partBack,  1.0 / 255.0);
-    multiply(frame,   inv,    partFront, 1.0 / 255.0);
-    add(partBack, partFront, result);                   prof.lap("intBlend");
-    return result;
-}
 
 
 cv::Mat colorMask(const cv::Mat& frame, const cv::Scalar& lower,
@@ -114,4 +98,21 @@ cv::Mat colorMask(const cv::Mat& frame, const cv::Scalar& lower,
     ======================================================================= */
     
     //-------------------------------------------------------------------------*/
+}
+
+Mat blendWithMask(const Mat& frame, const Mat& backImg,
+                  const Mat& mask, Profiler& prof)
+{
+    // 羽化:高斯模糊让边缘出现灰色过渡
+    Mat softMask;
+    GaussianBlur(mask, softMask, Size(9, 9), 0);        prof.lap("GaussianBlur");
+
+    // 8 位整数混合:结果 = 背景 × α + 当前帧 × (1 − α)
+    Mat alpha3, inv, partBack, partFront, result;
+    cvtColor(softMask, alpha3, COLOR_GRAY2BGR);
+    bitwise_not(alpha3, inv);
+    multiply(backImg, alpha3, partBack,  1.0 / 255.0);
+    multiply(frame,   inv,    partFront, 1.0 / 255.0);
+    add(partBack, partFront, result);                   prof.lap("intBlend");
+    return result;
 }

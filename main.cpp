@@ -7,12 +7,13 @@
 #include "Invisible.h"
 #include "Profiler.h"
 #include "PersonSeg.h"
+#include "Path.h"
 using namespace std;
 using namespace cv;
 
 //---------------------------- 模式 ----------------------------
 
-enum class Mode { Tracking, InvisibleHSV, InvisibleAI };
+enum class Mode { Tracking, InvisibleHSV, InvisibleAI, ReplaceBg };
 
 int main()
 {
@@ -46,7 +47,7 @@ int main()
     int savedSMin = 80,  savedSMax = 255;
     int savedVMin = 60,  savedVMax = 255;
 
-    FileStorage fsRead("hsv_setting.yml", FileStorage::READ);
+    FileStorage fsRead(appPath("hsv_setting.yml"), FileStorage::READ);
     if (fsRead.isOpened())
     {
         if (!fsRead["hMin"].empty() && !fsRead["hMax"].empty() &&
@@ -82,14 +83,17 @@ int main()
     //------------- 状态变量 -------------
     Track tracker;
     SmoothFps fpsCounter;
-    PersonSeg seg("models/human_segmentation_pphumanseg_2023mar.onnx");
-    VideoWriter writer;
+    PersonSeg seg(appPath("models/human_segmentation_pphumanseg_2023mar.onnx"));    VideoWriter writer;
     bool recording = false;
     Mat backImg;
     Mode mode = Mode::Tracking;
 
     Profiler prof;
     Profiler profMain;
+    /*替换背景相关参数*/
+    Mat newBg = imread(appPath("bg.jpg"));      // 没做路径统一就写 "bg.jpg"
+    if (newBg.empty()) cerr << "背景图读取失败,替换模式不可用" << endl;
+    else resize(newBg, newBg, frame.size(), 0, 0, INTER_AREA);
     //------------- 主循环 -------------
     while (true)
     {
@@ -139,6 +143,18 @@ int main()
 
         output = blendWithMask(frame, backImg, mask, prof);
         prof.frameDone();
+        break;
+    }
+    case Mode::ReplaceBg:
+    {
+        if (newBg.empty())
+        {
+            cv::putText(output, "bg.jpg not found", Point(20, 40),
+                        FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 0, 255), 2);
+            break;
+        }
+        Mat mask = seg.segment(frame);
+        output = blendWithMask(newBg, frame, mask, prof);   // 注意:新背景在前,画面在后
         break;
     }
     }
@@ -191,9 +207,13 @@ int main()
             backImg = frame.clone();
             cout << "背景采集完成" << endl;
         }
+        else if (key == 'p' || key == 'P')
+        {
+            mode = Mode::ReplaceBg;
+        }
         else if (key == 's' || key == 'S')
         {
-            FileStorage fsWrite("hsv_setting.yml", FileStorage::WRITE);
+            FileStorage fsWrite(appPath("hsv_setting.yml"), FileStorage::WRITE);            
             if (fsWrite.isOpened())
             {
                 fsWrite << "hMin" << getTrackbarPos("H min", "HSV Controls");

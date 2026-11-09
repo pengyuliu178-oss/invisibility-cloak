@@ -1,0 +1,8 @@
+[33mcommit 29287a33ec9c84070cd47956ab90044df6ed1fb7[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: pengyuliu178-oss <289427269+pengyuliu178-oss@users.noreply.github.com>
+Date:   Sat Nov 7 18:13:09 2026 +0800
+
+    docs: update README for AI segmentation mode
+
+ README.md | 89 [32m++++++++++++++++++++++++++++++++++++++++++++[m[31m-------------------[m
+ 1 file changed, 63 insertions(+), 26 deletions(-)

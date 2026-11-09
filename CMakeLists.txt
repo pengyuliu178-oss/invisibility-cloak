@@ -13,7 +13,11 @@ add_executable(${PROJECT_NAME}
     PersonSeg.cpp
 )
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    NOMINMAX
+    APP_ROOT="${CMAKE_SOURCE_DIR}")
 add_executable(seg_test seg_test.cpp)
+target_compile_definitions(seg_test PRIVATE APP_ROOT="${CMAKE_SOURCE_DIR}")
 target_link_libraries(seg_test PRIVATE ${OpenCV_LIBS})
 
 if(MSVC)

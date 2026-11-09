@@ -24,7 +24,10 @@ Mat PersonSeg::segment(const Mat& frame)
     Mat bg(H, W, CV_32F, out.ptr<float>(0, 0));
     Mat person(H, W, CV_32F, out.ptr<float>(0, 1));
     Mat diff = person - bg;
-    resize(diff, diff, frame.size(), 0, 0, INTER_LINEAR);
+    if (prevDiff_.empty()) prevDiff_ = diff.clone();
+    else addWeighted(prevDiff_, smooth_, diff, 1.0 - smooth_, 0, prevDiff_);
 
-    return diff > 0;                             // CV_8U,0 或 255
+    Mat big;
+    resize(prevDiff_, big, frame.size(), 0, 0, INTER_LINEAR);
+    return big > 0;                             // CV_8U,0 或 255
 }

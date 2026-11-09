@@ -4,6 +4,7 @@
 #include <iostream>
 #include <windows.h>
 #include "Profiler.h"
+#include "Path.h"
 using namespace std;
 using namespace cv;
 
@@ -25,8 +26,7 @@ int main()
 {
     SetConsoleOutputCP(CP_UTF8);
     
-    dnn::Net net = dnn::readNetFromONNX("models/human_segmentation_pphumanseg_2023mar.onnx");
-    net.setPreferableBackend(dnn::DNN_BACKEND_OPENCV);
+    dnn::Net net = dnn::readNetFromONNX(appPath("models/human_segmentation_pphumanseg_2023mar.onnx"));    net.setPreferableBackend(dnn::DNN_BACKEND_OPENCV);
     net.setPreferableTarget(dnn::DNN_TARGET_CPU);
 
     VideoCapture capture(0);
